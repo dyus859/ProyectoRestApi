@@ -1,10 +1,10 @@
 package www.iesmurgi.proyectorestapi.view
 
+import android.os.Build
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.view.inputmethod.InputMethodManager
 import android.widget.Toast
-import androidx.appcompat.widget.SearchView
 import androidx.recyclerview.widget.LinearLayoutManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -13,13 +13,16 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import www.iesmurgi.proyectorestapi.APIService
 import www.iesmurgi.proyectorestapi.databinding.ActivityMainBinding
-import www.iesmurgi.proyectorestapi.models.Emoji
-import www.iesmurgi.proyectorestapi.models.EmojiAdapter
+import www.iesmurgi.proyectorestapi.models.Article
+import www.iesmurgi.proyectorestapi.models.ArticleAdapter
 
-class MainActivity : AppCompatActivity(), SearchView.OnQueryTextListener {
+class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
-    private lateinit var adapter: EmojiAdapter
-    private val emojiList = mutableListOf<Emoji>()
+    private lateinit var adapter: ArticleAdapter
+    private val articleList = mutableListOf<Article>()
+
+    private val FIRST_NEWS_NUMBER = 10
+    private val ADD_MORE_NEWS = 5
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -29,37 +32,65 @@ class MainActivity : AppCompatActivity(), SearchView.OnQueryTextListener {
         setContentView(binding.root)
 
         initRecyclerView()
-        binding.svEmojis.setOnQueryTextListener(this)
-
-        searchByName("person")
+        getFirstN(FIRST_NEWS_NUMBER)
     }
 
     private fun initRecyclerView() {
-        adapter = EmojiAdapter(emojiList)
-        binding.rvEmojis.adapter = adapter
-        binding.rvEmojis.layoutManager = LinearLayoutManager(applicationContext)
+        adapter = ArticleAdapter(this, articleList)
+        binding.rvArticles.adapter = adapter
+        binding.rvArticles.layoutManager = LinearLayoutManager(applicationContext)
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            binding.rvArticles.setOnScrollChangeListener { v, scrollX, scrollY, oldScrollX, oldScrollY ->
+                if (!binding.rvArticles.canScrollVertically(1)) {
+                    addNextN(ADD_MORE_NEWS)
+                }
+            }
+        }
     }
 
     private fun getRetrofit(): Retrofit {
         return Retrofit.Builder()
-            .baseUrl("https://emojihub.yurace.pro/api/all/")
+            .baseUrl("https://api.spaceflightnewsapi.net/")
             .addConverterFactory(GsonConverterFactory.create())
             .build()
     }
 
-    private fun searchByName(query: String) {
+    private fun getFirstN(number: Int) {
         CoroutineScope(Dispatchers.IO).launch {
-            val call = getRetrofit().create(APIService::class.java).getEmojis("$query")
-            val body = call.body()
+            val call = getRetrofit().create(APIService::class.java)
+                .getArticles("/v3/articles?_limit=$number")
+            val articles = call.body()
 
             runOnUiThread {
                 if (call.isSuccessful) {
-                    /*
-                    emojiList.clear()
-                    val emojis = body?.filter { it.name.contains(name, true) }
-                    emojiList.addAll(emojis ?: listOf())
-                    adapter.notifyDataSetChanged()
-                     */
+                    articleList.clear()
+
+                    if (articles != null) {
+                        articleList.addAll(articles)
+                        adapter.notifyDataSetChanged()
+                    }
+                } else {
+                    showError()
+                }
+
+                hideKeyboard()
+            }
+        }
+    }
+
+    private fun addNextN(number: Int) {
+        CoroutineScope(Dispatchers.IO).launch {
+            val call = getRetrofit().create(APIService::class.java)
+                .getArticles("/v3/articles?_limit=$number&_start=${articleList.size}")
+            val articles = call.body()
+
+            runOnUiThread {
+                if (call.isSuccessful) {
+                    if (articles != null) {
+                        articleList.addAll(articles)
+                        adapter.notifyDataSetChanged()
+                    }
                 } else {
                     showError()
                 }
@@ -75,18 +106,6 @@ class MainActivity : AppCompatActivity(), SearchView.OnQueryTextListener {
             "Ha ocurrido un error",
             Toast.LENGTH_SHORT
         ).show()
-    }
-
-    override fun onQueryTextChange(newText: String?): Boolean {
-        return true
-    }
-
-    override fun onQueryTextSubmit(query: String?): Boolean {
-        if (!query.isNullOrEmpty()){
-            searchByName(query.lowercase())
-        }
-
-        return true
     }
 
     private fun hideKeyboard() {
