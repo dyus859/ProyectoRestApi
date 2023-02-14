@@ -36,7 +36,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun initRecyclerView() {
-        adapter = ArticleAdapter(this, articleList)
+        adapter = ArticleAdapter(applicationContext, articleList)
         binding.rvArticles.adapter = adapter
         binding.rvArticles.layoutManager = LinearLayoutManager(applicationContext)
 

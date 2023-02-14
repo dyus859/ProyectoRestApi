@@ -5,6 +5,7 @@ import android.content.Intent
 import android.net.Uri
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import android.widget.Toast
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import www.iesmurgi.proyectorestapi.databinding.ArticleItemBinding
@@ -37,9 +38,21 @@ class ArticleAdapter(
                 e.printStackTrace()
             }
 
+            // Clic corto -> abrimos la noticia en Google
             this.root.setOnClickListener {
                 val intent = Intent(Intent.ACTION_VIEW, Uri.parse(article.url))
                 context.startActivity(intent)
+            }
+
+            // Clic largo -> resumen de la noticia
+            this.root.setOnLongClickListener {
+                Toast.makeText(
+                    context,
+                    article.summary,
+                    Toast.LENGTH_SHORT
+                ).show()
+
+                true
             }
         }
     }
