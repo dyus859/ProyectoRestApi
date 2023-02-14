@@ -41,7 +41,7 @@ class MainActivity : AppCompatActivity() {
         binding.rvArticles.layoutManager = LinearLayoutManager(applicationContext)
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            binding.rvArticles.setOnScrollChangeListener { v, scrollX, scrollY, oldScrollX, oldScrollY ->
+            binding.rvArticles.setOnScrollChangeListener { _, _, _, _, _ ->
                 if (!binding.rvArticles.canScrollVertically(1)) {
                     addNextN(ADD_MORE_NEWS)
                 }

@@ -41,6 +41,7 @@ class ArticleAdapter(
             // Clic corto -> abrimos la noticia en Google
             this.root.setOnClickListener {
                 val intent = Intent(Intent.ACTION_VIEW, Uri.parse(article.url))
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 context.startActivity(intent)
             }
 
